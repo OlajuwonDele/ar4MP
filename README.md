@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Template for Isaac Lab Projects
 
 ## Overview
@@ -133,4 +132,4 @@ Some examples of packages that can likely be excluded are:
 "<path-to-isaac-sim>/extscache/omni.graph.*"        // Graph UI tools
 "<path-to-isaac-sim>/extscache/omni.services.*"     // Services tools
 ...
-```
+
