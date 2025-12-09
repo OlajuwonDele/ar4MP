@@ -134,7 +134,3 @@ Some examples of packages that can likely be excluded are:
 "<path-to-isaac-sim>/extscache/omni.services.*"     // Services tools
 ...
 ```
-=======
-# ar4MP
-AR4 Motion Planning Isaac Lab RL
->>>>>>> d5003d77419778e273f5e9a574d5bed05f858a84
