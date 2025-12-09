@@ -14,7 +14,7 @@ from . import agents
 
 gym.register(
     id="Template-Ar4mp-Direct-v0",
-    entry_point=f"{__name__}.ar4mp_env:Ar4mpEnv",
+    entry_point=f"{__name__}.ar4mp_env_cfg:Ar4mpEnvCfg",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.ar4mp_env_cfg:Ar4mpEnvCfg",
