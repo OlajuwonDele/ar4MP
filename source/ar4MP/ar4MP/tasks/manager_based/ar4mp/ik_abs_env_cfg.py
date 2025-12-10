@@ -6,6 +6,9 @@
 from isaaclab.controllers.differential_ik_cfg import DifferentialIKControllerCfg
 from isaaclab.envs.mdp.actions.actions_cfg import DifferentialInverseKinematicsActionCfg
 from isaaclab.utils import configclass
+from isaaclab.sensors import FrameTransformerCfg
+from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
+from isaaclab.markers.config import FRAME_MARKER_CFG 
 
 from . import joint_pos_env_cfg
 
@@ -32,9 +35,12 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
             asset_name="robot",
             joint_names=["joint_.*"],
             body_name="gripper_base_link",
+            debug_vis=True,
             controller=DifferentialIKControllerCfg(command_type="pose", use_relative_mode=False, ik_method="dls"),
             body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(pos=[0.0, 0.0, 0.107]),
         )
+
+        
 
 
 @configclass

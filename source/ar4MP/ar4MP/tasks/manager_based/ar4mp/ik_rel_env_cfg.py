@@ -6,7 +6,9 @@
 from isaaclab.controllers.differential_ik_cfg import DifferentialIKControllerCfg
 from isaaclab.envs.mdp.actions.actions_cfg import DifferentialInverseKinematicsActionCfg
 from isaaclab.utils import configclass
-
+from isaaclab.sensors import FrameTransformerCfg
+from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
+from isaaclab.markers.config import FRAME_MARKER_CFG 
 from . import joint_pos_env_cfg
 
 ##
@@ -30,10 +32,12 @@ class AR4ReachEnvCfg(joint_pos_env_cfg.AR4ReachEnvCfg):
             asset_name="robot",
             joint_names=["Joint.*"],
             body_name="end_effector",
+            debug_vis=True,
             controller=DifferentialIKControllerCfg(command_type="pose", use_relative_mode=True, ik_method="dls"),
             scale=0.5,
             body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(pos=[0.0, 0.0, 0.107]),
         )
+
 
 
 @configclass

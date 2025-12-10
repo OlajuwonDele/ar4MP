@@ -21,6 +21,7 @@ from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.sensors.frame_transformer.frame_transformer_cfg import FrameTransformerCfg
 
 import torch
 import pandas as pd
@@ -141,10 +142,9 @@ class RewardsCfg:
     
     reached_goal = RewTerm(
         func=mdp.reached_ee_goal,
-        weight=2.0,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING),"threshold" : 0.03, "command_name": "ee_pose"}
+        weight=1.0,
+        params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING),"threshold" : 0.07, "command_name": "ee_pose"}
     )
-
     # action penalty
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
     joint_vel = RewTerm(
@@ -200,7 +200,7 @@ class AR4MPEnvCfg(ManagerBasedRLEnvCfg):
         # general settings
         self.decimation = 2
         self.sim.render_interval = self.decimation
-        self.episode_length_s = 12.0
+        self.episode_length_s = 15.0
         self.viewer.eye = (3.5, 3.5, 3.5)
         # simulation settings
         self.sim.dt = 1.0 / 60.0

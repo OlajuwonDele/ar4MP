@@ -7,6 +7,7 @@ from isaaclab.managers import CommandTerm, CommandTermCfg
 from isaaclab.markers import VisualizationMarkersCfg
 from isaaclab.markers.config import FRAME_MARKER_CFG
 from isaaclab.utils import configclass
+from isaaclab.markers import VisualizationMarkers
 
 
 
@@ -17,8 +18,8 @@ class WaypointCommand(CommandTerm):
         super().__init__(cfg, env)
 
         df = pd.read_excel(cfg.waypoints_path)
-        xyz = (df[['X', 'Y', 'Z']] / 100.0).to_numpy()
-        quat = np.tile(np.array([1.0, 0.0, 0.0, 0.0]), (xyz.shape[0], 1))
+        xyz = (df[['X', 'Y', 'Z']]).to_numpy()
+        quat = np.tile(np.array([0.7071, 0.70711, 0, 0]), (xyz.shape[0], 1)) 
         waypoints_np = np.hstack((xyz, quat))
         
         waypoints = torch.tensor(
@@ -31,6 +32,12 @@ class WaypointCommand(CommandTerm):
         self.current_wp_idx = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)
         self.num_steps = self.paths.shape[1]
         self.metrics["waypoint_index"] = torch.zeros(env.num_envs, device=env.device)
+        if cfg.debug_vis:
+            self.goal_pose_visualizer = VisualizationMarkers(cfg.goal_pose_visualizer_cfg)
+            self.current_pose_visualizer = VisualizationMarkers(cfg.current_pose_visualizer_cfg)
+        else:
+            self.goal_pose_visualizer = None
+            self.current_pose_visualizer = None
 
     def _resample_command(self, env_ids: torch.Tensor):
         """
@@ -46,15 +53,38 @@ class WaypointCommand(CommandTerm):
 
     def _update_command(self):
         """
-        Called at every physics step to update the command.
+        Called at every physics step to update the command. Visualization happens HERE.
         """
-        # Logic to update the command. 
-        # If you want the robot to move through the waypoints over time, 
-        # you need logic here to increment self.current_wp_idx.
-        
-        # For now, we return the pose at the current index.
         env_ids = torch.arange(self.num_envs, device=self.device)
-        return self.paths[env_ids, self.current_wp_idx]
+        cmd = self.paths[env_ids, self.current_wp_idx]  
+        
+        if self.cfg.debug_vis:
+            goal_trans = cmd[:, :3]
+            goal_orient = cmd[:, 3:7]
+
+            # Grab environment origins to convert local command -> world position
+            env_origins = self._env.scene.env_origins # Shape (N, 3)
+            
+            # NOTE: VisualizationMarkers can often accept Torch tensors directly on GPU 
+            # in newer Isaac Lab versions. If this errors, keep your .cpu().numpy() conversion.
+            self.goal_pose_visualizer.visualize(
+                translations=goal_trans + env_origins, 
+                orientations=goal_orient
+            )
+
+            asset = self._env.scene[self.cfg.asset_name]
+            body_id = asset.body_names.index(self.cfg.body_name)
+
+            curr_pos = asset.data.body_pos_w[:, body_id]      # (N, 3)
+            curr_quat = asset.data.body_quat_w[:, body_id]    # (N, 4)
+
+            self.current_pose_visualizer.visualize(
+                translations=curr_pos,
+                orientations=curr_quat,
+            )
+            
+
+        return cmd
 
     def _update_metrics(self):
         """
@@ -66,7 +96,7 @@ class WaypointCommand(CommandTerm):
 
     @property
     def command(self):
-        env_ids = torch.arange(self._env.num_envs, device=self._env.device)
+        env_ids = torch.arange(self.num_envs, device=self.device)
         return self.paths[env_ids, self.current_wp_idx]
 
     def reset(self, env_ids):
@@ -89,9 +119,7 @@ class WaypointCommandCfg(CommandTermCfg):
     goal_pose_visualizer_cfg: VisualizationMarkersCfg = FRAME_MARKER_CFG.replace(prim_path="/Visuals/Command/goal_pose")
     """The configuration for the goal pose visualization marker. Defaults to FRAME_MARKER_CFG."""
 
-    current_pose_visualizer_cfg: VisualizationMarkersCfg = FRAME_MARKER_CFG.replace(
-        prim_path="/Visuals/Command/body_pose"
-    )
+    current_pose_visualizer_cfg: VisualizationMarkersCfg = FRAME_MARKER_CFG.replace(prim_path="/Visuals/Command/body_pose")
     """The configuration for the current pose visualization marker. Defaults to FRAME_MARKER_CFG."""
 
     waypoints_path: str = MISSING

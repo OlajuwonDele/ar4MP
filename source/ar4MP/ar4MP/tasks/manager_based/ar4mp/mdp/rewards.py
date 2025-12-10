@@ -85,11 +85,37 @@ def position_command_error(env: ManagerBasedRLEnv, command_name: str, asset_cfg:
     curr_pos_w = asset.data.body_pos_w[:, asset_cfg.body_ids[0]]  # type: ignore
     return torch.norm(curr_pos_w - des_pos_w, dim=1)
 
+# def reached_ee_goal(env: ManagerBasedRLEnv, command_name: str, threshold: float, asset_cfg: SceneEntityCfg):
+#     asset: RigidObject = env.scene[asset_cfg.name]
+
+#     # 1. Get the Command Term object from the manager
+#     # This replaces the need for 'env.waypoint_cmd'
+#     cmd_term = env.command_manager._terms[command_name] 
+
+#     command = env.command_manager.get_command(command_name)
+#     des_pos_b = command[:, :3]
+#     des_pos_w, _ = combine_frame_transforms(asset.data.root_pos_w, asset.data.root_quat_w, des_pos_b)
+
+#     curr_pos_w = asset.data.body_pos_w[:, asset_cfg.body_ids[0]] 
+#     dist = torch.norm(curr_pos_w - des_pos_w, dim=1)
+
+#     reached = dist < threshold
+    
+#     # 2. Update the index on the term object we retrieved
+#     cmd_term.current_wp_idx[reached] += 1
+    
+#     last_idx = cmd_term.num_steps - 1
+#     finished = cmd_term.current_wp_idx >= last_idx
+#     cmd_term.current_wp_idx.clamp_(max=last_idx)
+
+#     # if finished.any():
+#     #     env.termination_manager.terminated[finished] = True
+
+#     return reached.float()
+
 def reached_ee_goal(env: ManagerBasedRLEnv, command_name: str, threshold: float, asset_cfg: SceneEntityCfg):
     asset: RigidObject = env.scene[asset_cfg.name]
-
-    # 1. Get the Command Term object from the manager
-    # This replaces the need for 'env.waypoint_cmd'
+    
     cmd_term = env.command_manager._terms[command_name] 
 
     command = env.command_manager.get_command(command_name)
@@ -99,17 +125,24 @@ def reached_ee_goal(env: ManagerBasedRLEnv, command_name: str, threshold: float,
     curr_pos_w = asset.data.body_pos_w[:, asset_cfg.body_ids[0]] 
     dist = torch.norm(curr_pos_w - des_pos_w, dim=1)
 
-    reached = dist < threshold
 
-    # 2. Update the index on the term object we retrieved
+    reached = dist < threshold
+    
     cmd_term.current_wp_idx[reached] += 1
 
     last_idx = cmd_term.num_steps - 1
-    finished = cmd_term.current_wp_idx >= last_idx
+    reached_index = cmd_term.current_wp_idx.float() - 1.0
+    
+    if last_idx > 0:
+        index_scale = reached_index / last_idx
+    else:
+        # Handle case for only one waypoint (last_idx = 0)
+        index_scale = torch.ones_like(reached_index)
+
     cmd_term.current_wp_idx.clamp_(max=last_idx)
+    base_reward_value = 5.0
+    reach_reward = index_scale * base_reward_value
 
-    if finished.any():
-        env.termination_manager.terminated[finished] = True
+    progress_reward = reach_reward * (0.1 + 0.9 * torch.exp(-dist))  # encourage agent to keep traversing through the waypoints and not stagnate
 
-    return reached.float()
-
+    return reach_reward + progress_reward

@@ -12,7 +12,9 @@ from . import mdp
 # Pre-defined configs
 ##
 from isaaclab_assets import AR4_MK3_CFG  # isort: skip
-
+from isaaclab.sensors import FrameTransformerCfg
+from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
+from isaaclab.markers.config import FRAME_MARKER_CFG 
 
 ##
 # Environment configuration
@@ -35,7 +37,7 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
 
         # override actions
         self.actions.arm_action = mdp.JointPositionActionCfg(
-            asset_name="robot", joint_names=["joint_.*"], scale=0.5, use_default_offset=True
+            asset_name="robot", joint_names=["joint_.*"], scale=0.5, use_default_offset=True, debug_vis=True
         )
         # override command generator body
         # end-effector is along z-direction

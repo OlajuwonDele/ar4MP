@@ -6,6 +6,9 @@
 from isaaclab.controllers.operational_space_cfg import OperationalSpaceControllerCfg
 from isaaclab.envs.mdp.actions.actions_cfg import OperationalSpaceControllerActionCfg
 from isaaclab.utils import configclass
+from isaaclab.sensors import FrameTransformerCfg
+from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
+from isaaclab.markers.config import FRAME_MARKER_CFG 
 
 
 # Pre-defined configs
@@ -32,11 +35,13 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
         self.rewards.end_effector_position_tracking.params["asset_cfg"].body_names = ["gripper_base_link"]
         self.rewards.end_effector_position_tracking_fine_grained.params["asset_cfg"].body_names = ["gripper_base_link"]
         self.rewards.end_effector_orientation_tracking.params["asset_cfg"].body_names = ["gripper_base_link"]
+        self.rewards.reached_goal.params["asset_cfg"].body_names = ["gripper_base_link"]
 
         self.actions.arm_action = OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=["joint_.*"],
             body_name="gripper_base_link",
+            debug_vis=True,
             # If a task frame different from articulation root/base is desired, a RigidObject, e.g., "task_frame",
             # can be added to the scene and its relative path could provided as task_frame_rel_path
             # task_frame_rel_path="task_frame",
@@ -47,7 +52,7 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
                 partial_inertial_dynamics_decoupling=False,
                 gravity_compensation=False,
                 motion_stiffness_task=100.0,
-                motion_damping_ratio_task=1.0,
+                motion_damping_ratio_task=0.3,
                 motion_stiffness_limits_task=(10.0, 200.0),
                 # nullspace_control="position",
             ),
@@ -57,10 +62,11 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
             stiffness_scale=100.0,
         )
         self.commands.ee_pose.body_name = "gripper_base_link"
-        self.commands.ee_pose.ranges.pitch = (math.pi / 2, math.pi / 2)
+        # self.commands.ee_pose.ranges.pitch = (math.pi / 2, math.pi / 2)
         # Removing these observations as they are not needed for OSC and we want keep the observation space small
         self.observations.policy.joint_pos = None
         self.observations.policy.joint_vel = None
+
 
 
 @configclass
