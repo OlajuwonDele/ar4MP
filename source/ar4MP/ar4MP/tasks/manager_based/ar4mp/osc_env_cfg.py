@@ -20,7 +20,7 @@ from isaaclab_assets import AR4_MK3_OSC_CFG   # isort: skip
 import math
 
 @configclass
-class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
+class AR4MPEnvCfg(joint_pos_env_cfg.AR4MPEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
@@ -70,7 +70,7 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
 
 
 @configclass
-class AR4MPEnvCfg_PLAY(ar4mp_env_cfg.AR4MPEnvCfg):
+class AR4MPEnvCfg_PLAY(AR4MPEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()

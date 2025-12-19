@@ -44,7 +44,7 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
         self.commands.ee_pose.body_name = "gripper_base_link"
 
 @configclass
-class AR4ReachEnvCfg_PLAY(ar4mp_env_cfg.AR4MPEnvCfg):
+class AAR4MPEnvCfg_Play(AR4MPEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()

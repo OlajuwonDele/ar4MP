@@ -18,7 +18,7 @@ from isaaclab_assets.robots.ar4 import AR4_PD_CFG  # isort: skip
 
 
 @configclass
-class AR4ReachEnvCfg(joint_pos_env_cfg.AR4ReachEnvCfg):
+class AR4MPEnvCfg(joint_pos_env_cfg.AR4MPEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
@@ -41,7 +41,7 @@ class AR4ReachEnvCfg(joint_pos_env_cfg.AR4ReachEnvCfg):
 
 
 @configclass
-class AR4ReachEnvCfg_PLAY(AR4ReachEnvCfg):
+class AR4MPEnvCfg_Play(AR4MPEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
