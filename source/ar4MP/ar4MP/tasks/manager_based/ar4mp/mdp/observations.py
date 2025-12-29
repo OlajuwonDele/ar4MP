@@ -17,102 +17,103 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-def object_poses_in_base_frame(
-    env: ManagerBasedRLEnv,
-    object_cfg: SceneEntityCfg = SceneEntityCfg("mug"),
-    robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    return_key: Literal["pos", "quat", None] = None,
-) -> torch.Tensor:
-    """The pose of the object in the robot base frame."""
-    object: RigidObject = env.scene[object_cfg.name]
+def kinematic_data(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg):
+    """Helper to extract robot data safely."""
+    robot: Articulation = env.scene[asset_cfg.name]
+    # Use the body_ids provided by the config class automatically
+    ee_idx = asset_cfg.body_ids[0]
+    joint_ids = asset_cfg.joint_ids
+    jacobian = robot.root_physx_view.get_jacobians()[:, ee_idx, :, joint_ids]
+    mass_matrix = robot.root_physx_view.get_generalized_mass_matrices()[:, joint_ids, :][:, :, joint_ids]
+    
+    return jacobian, mass_matrix
 
-    pos_object_world = object.data.root_pos_w
-    quat_object_world = object.data.root_quat_w
-
-    """The position of the robot in the world frame."""
-    robot: Articulation = env.scene[robot_cfg.name]
-    root_pos_w = robot.data.root_pos_w
-    root_quat_w = robot.data.root_quat_w
-
-    pos_object_base, quat_object_base = math_utils.subtract_frame_transforms(
-        root_pos_w, root_quat_w, pos_object_world, quat_object_world
-    )
-    if return_key == "pos":
-        return pos_object_base
-    elif return_key == "quat":
-        return quat_object_base
-    elif return_key is None:
-        return torch.cat((pos_object_base, quat_object_base), dim=1)
-
-
-def object_grasped(
-    env: ManagerBasedRLEnv,
-    robot_cfg: SceneEntityCfg,
-    ee_frame_cfg: SceneEntityCfg,
-    object_cfg: SceneEntityCfg,
-    diff_threshold: float = 0.06,
-    force_threshold: float = 1.0,
-) -> torch.Tensor:
+def local_condition_index(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
     """
-    Check if an object is grasped by the specified robot.
-    Support both surface gripper and parallel gripper.
-    If contact_grasp sensor is found, check if the contact force is greater than force_threshold.
+    Observe the condition number of the end-effector
+    """
+    jacobian, _ = kinematic_data(env, asset_cfg)
+    # N, n, _ = jacobian.shape
+    # I = torch.eye(n, device=jacobian.device)
+    # N_ = (1/n) * I
+
+    # # Term1: trace(J * N_ * J^T)
+    # term1 = torch.einsum("bij,jk,bik->b", jacobian, N_, jacobian)  # shape [N]
+
+    # # Term2: trace(inv(J) * N_ * inv(J)^T)
+    # jacobian_inv = torch.linalg.inv(jacobian)
+    # term2 = torch.einsum("bij,jk,bik->b", jacobian_inv, N_, jacobian_inv)
+
+    # cond_number = (1/n) * torch.sqrt(term1 * term2)
+    # local_cond_index = 1.0 / cond_number
+
+    # return local_cond_index
+
+    # SVD method is more stable and can handle non-square Jacobians i.e better for modularity
+    s = torch.linalg.svdvals(jacobian)
+    # Cond = max singular value / min singular value
+    # 1.0 means the ellipsoid is a sphere (Perfect)
+    # 0.0 means the ellipsoid is flat (Singular)
+    local_cond_index = s[:, -1] / torch.clamp(s[:, 0], min=1e-6)
+    
+    return local_cond_index.unsqueeze(-1)
+
+def manipulability(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    """
+    Observe the manipulability of the end-effector
     """
 
-    robot: Articulation = env.scene[robot_cfg.name]
-    ee_frame: FrameTransformer = env.scene[ee_frame_cfg.name]
-    object: RigidObject = env.scene[object_cfg.name]
+    jacobian, _ = kinematic_data(env, asset_cfg)
+    jj_t = torch.bmm(jacobian, jacobian.transpose(1, 2))
+    manip = torch.sqrt(torch.clamp(torch.det(jj_t), min=1e-9))
+    return manip.unsqueeze(-1)
 
-    object_pos = object.data.root_pos_w
-    end_effector_pos = ee_frame.data.target_pos_w[:, 0, :]
-    pose_diff = torch.linalg.vector_norm(object_pos - end_effector_pos, dim=1)
+def order_independent_manipulability(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    jacobian, _ = kinematic_data(env, asset_cfg)
+    n = jacobian.shape[1] # Task space dimension 
+    jj_t = torch.bmm(jacobian, jacobian.transpose(1, 2))
+    det_jjt = torch.clamp(torch.det(jj_t), min=1e-9)
+    return torch.pow(det_jjt, 1/n).unsqueeze(-1)
 
-    if "contact_grasp" in env.scene.keys() and env.scene["contact_grasp"] is not None:
-        contact_force_grasp = env.scene["contact_grasp"].data.net_forces_w  # shape:(N, 2, 3) for two fingers
-        contact_force_norm = torch.linalg.vector_norm(
-            contact_force_grasp, dim=2
-        )  # shape:(N, 2) - force magnitude per finger
-        both_fingers_force_ok = torch.all(
-            contact_force_norm > force_threshold, dim=1
-        )  # both fingers must exceed threshold
-        grasped = torch.logical_and(pose_diff < diff_threshold, both_fingers_force_ok)
-    elif (
-        f"contact_grasp_{object_cfg.name}" in env.scene.keys()
-        and env.scene[f"contact_grasp_{object_cfg.name}"] is not None
-    ):
-        contact_force_object = env.scene[
-            f"contact_grasp_{object_cfg.name}"
-        ].data.net_forces_w  # shape:(N, 2, 3) for two fingers
-        contact_force_norm = torch.linalg.vector_norm(
-            contact_force_object, dim=2
-        )  # shape:(N, 2) - force magnitude per finger
-        both_fingers_force_ok = torch.all(
-            contact_force_norm > force_threshold, dim=1
-        )  # both fingers must exceed threshold
-        grasped = torch.logical_and(pose_diff < diff_threshold, both_fingers_force_ok)
-    else:
-        grasped = (pose_diff < diff_threshold).clone().detach()
+def dynamic_manipulability(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    jacobian, mass_matrix = kinematic_data(env, asset_cfg)
+    m_inv = torch.linalg.pinv(mass_matrix)
+    
+    m_inv_sq = torch.bmm(m_inv, m_inv) 
+    
+    dyn_matrix = torch.bmm(torch.bmm(jacobian, m_inv_sq), jacobian.transpose(1, 2))
+    return torch.sqrt(torch.clamp(torch.det(dyn_matrix), min=1e-9)).unsqueeze(-1)
 
-    if hasattr(env.scene, "surface_grippers") and len(env.scene.surface_grippers) > 0:
-        surface_gripper = env.scene.surface_grippers["surface_gripper"]
-        suction_cup_status = surface_gripper.state.view(-1, 1)  # 1: closed, 0: closing, -1: open
-        suction_cup_is_closed = (suction_cup_status == 1).to(torch.float32)
-        grasped = torch.logical_and(suction_cup_is_closed, pose_diff < diff_threshold)
+def isotropy_index(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    jacobian, _ = kinematic_data(env, asset_cfg)
+    n = jacobian.shape[1] # Task space dimension 
 
-    else:
-        if hasattr(env.cfg, "gripper_joint_names"):
-            gripper_joint_ids, _ = robot.find_joints(env.cfg.gripper_joint_names)
-            grasped = torch.logical_and(
-                grasped,
-                torch.abs(torch.abs(robot.data.joint_pos[:, gripper_joint_ids[0]]) - env.cfg.gripper_open_val)
-                > env.cfg.gripper_threshold,
-            )
-            grasped = torch.logical_and(
-                grasped,
-                torch.abs(torch.abs(robot.data.joint_pos[:, gripper_joint_ids[1]]) - env.cfg.gripper_open_val)
-                > env.cfg.gripper_threshold,
-            )
-        else:
-            raise ValueError("No gripper_joint_names found in environment config")
+    jj_t = torch.bmm(jacobian, jacobian.transpose(1, 2))
+    
+    # Calculate both means from the same jj_t tensor
+    geom_mean = torch.pow(torch.clamp(torch.det(jj_t), min=1e-9), 1/n)
+    arith_mean = (torch.einsum("bii->b", jj_t) / n)
+    
+    return (geom_mean / arith_mean).unsqueeze(-1)
 
-    return grasped
+def dynamic_condition_index(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    """
+    Observe the dynamic condition number of the end-effector
+    """
+    jacobian, mass_matrix = kinematic_data(env, asset_cfg)
+    num_joints = mass_matrix.shape[-1]
+    device = mass_matrix.device
+    
+    # Trace/Mean logic
+    eye = torch.eye(num_joints, device=device).unsqueeze(0)
+    mass_trace = torch.einsum("bii->b", mass_matrix).unsqueeze(-1).unsqueeze(-1)
+    diff_matrix = mass_matrix - (mass_trace / num_joints) * eye
+
+    upper_tri = torch.triu(diff_matrix)
+    dyn_cond_mat = 0.5 * torch.bmm(upper_tri.transpose(1, 2), upper_tri)
+    
+    # Eig returns complex numbers (Real + Imaginary)
+    eigvals = torch.linalg.eigvals(dyn_cond_mat)
+    # RL policies can only use the Real part
+    return torch.real(eigvals).mean(dim=-1).unsqueeze(-1)
+

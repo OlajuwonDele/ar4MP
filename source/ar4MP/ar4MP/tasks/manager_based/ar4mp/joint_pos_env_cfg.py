@@ -30,10 +30,13 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
         # switch robot to AR4
         self.scene.robot = AR4_MK3_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         # override rewards
-        self.rewards.end_effector_position_tracking.params["asset_cfg"].body_names = ["gripper_base_link"]
-        self.rewards.end_effector_position_tracking_fine_grained.params["asset_cfg"].body_names = ["gripper_base_link"]
-        self.rewards.end_effector_orientation_tracking.params["asset_cfg"].body_names = ["gripper_base_link"]
-        self.rewards.reached_goal.params["asset_cfg"].body_names = ["gripper_base_link"]
+        for r in [
+                self.rewards.end_effector_position_tracking,
+                self.rewards.end_effector_position_tracking_fine_grained,
+                self.rewards.end_effector_orientation_tracking,
+                self.rewards.reached_goal,
+            ]:
+                r.params["asset_cfg"].body_names = ["gripper_base_link"]
 
         # override actions
         self.actions.arm_action = mdp.JointPositionActionCfg(

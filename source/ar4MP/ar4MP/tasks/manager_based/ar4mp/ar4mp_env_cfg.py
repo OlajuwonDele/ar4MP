@@ -71,7 +71,7 @@ class CommandsCfg:
         body_name=MISSING,
         resampling_time_range=(4.0, 4.0),
         debug_vis=True,
-        waypoints_path = "C:/ar4MP/source/ar4MP/ar4MP/tasks/manager_based/ar4mp/sample_trajectory.xlsx",
+        waypoints_path = "/home/juwon/ar4MP/source/ar4MP/ar4MP/tasks/manager_based/ar4mp/sample_trajectory.xlsx",
     )
     
 
@@ -126,7 +126,7 @@ class RewardsCfg:
     # task terms
     end_effector_position_tracking = RewTerm(
         func=mdp.position_command_error,
-        weight=-0.2,
+        weight=-0.3,
         params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING), "command_name": "ee_pose"},
     )
     end_effector_position_tracking_fine_grained = RewTerm(
@@ -200,7 +200,7 @@ class AR4MPEnvCfg(ManagerBasedRLEnvCfg):
         # general settings
         self.decimation = 2
         self.sim.render_interval = self.decimation
-        self.episode_length_s = 15.0
+        self.episode_length_s = 30.0
         self.viewer.eye = (3.5, 3.5, 3.5)
         # simulation settings
         self.sim.dt = 1.0 / 60.0
