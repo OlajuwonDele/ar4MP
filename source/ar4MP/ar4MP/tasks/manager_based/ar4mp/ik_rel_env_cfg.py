@@ -14,7 +14,7 @@ from . import joint_pos_env_cfg
 ##
 # Pre-defined configs
 ##
-from isaaclab_assets.robots.ar4 import AR4_PD_CFG  # isort: skip
+from ....robot import AR4_MK3_PD_CFG  # isort: skip
 
 
 @configclass
@@ -25,7 +25,7 @@ class AR4MPEnvCfg(joint_pos_env_cfg.AR4MPEnvCfg):
 
         # Set AR4 as robot
         # We switch here to a stiffer PD controller for IK tracking to be better.
-        self.scene.robot = AR4_PD_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        self.scene.robot = AR4_MK3_PD_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
         # Set actions for the specific robot type (AR4)
         self.actions.arm_action = DifferentialInverseKinematicsActionCfg(

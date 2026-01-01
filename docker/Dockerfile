@@ -8,5 +8,5 @@ COPY config ./config
 
 # Install ar4MP package dependencies
 RUN /workspace/isaaclab/_isaac_sim/python.sh -m pip install -e ./source/ar4MP
-
+RUN /workspace/isaaclab/_isaac_sim/python.sh -m pip install openpyxl
 ENTRYPOINT ["/bin/bash"]

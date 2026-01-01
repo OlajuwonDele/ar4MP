@@ -13,7 +13,7 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 96 # Increased for better trajectory data
     max_iterations = 1500  # Give it more time to learn the complex state space
     save_interval = 50
-    experiment_name = "ar4_motion_planning"
+    experiment_name = "ar4_kinematic_motion_planning"
     run_name = ""
     resume = False
     

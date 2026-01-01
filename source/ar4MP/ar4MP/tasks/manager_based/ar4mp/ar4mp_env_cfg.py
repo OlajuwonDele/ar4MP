@@ -27,6 +27,7 @@ import torch
 import pandas as pd
 import numpy as np
 from . import mdp
+import os 
 
 ##
 # Pre-defined configs
@@ -71,9 +72,8 @@ class CommandsCfg:
         body_name=MISSING,
         resampling_time_range=(4.0, 4.0),
         debug_vis=True,
-        waypoints_path = "/home/juwon/ar4MP/source/ar4MP/ar4MP/tasks/manager_based/ar4mp/sample_trajectory.xlsx",
+        waypoints_path = os.path.join(os.path.dirname(__file__), "sample_trajectory.xlsx"),
     )
-    
 
 @configclass
 class ActionsCfg:

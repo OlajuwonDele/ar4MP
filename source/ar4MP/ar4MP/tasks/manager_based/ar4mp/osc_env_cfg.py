@@ -15,7 +15,7 @@ from isaaclab.markers.config import FRAME_MARKER_CFG
 ##
 from . import joint_pos_env_cfg
 from . import mdp
-from isaaclab_assets import AR4_MK3_OSC_CFG   # isort: skip
+from ....robot import AR4_MK3_OSC_CFG   # isort: skip
 
 import math
 

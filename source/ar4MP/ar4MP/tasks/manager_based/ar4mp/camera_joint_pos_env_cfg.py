@@ -6,7 +6,7 @@
 import math
 
 from isaaclab.utils import configclass
-from . import ar4mp_env_cfg 
+from . import ar4mp_camera_env_cfg
 from . import mdp
 ##
 # Pre-defined configs
@@ -22,7 +22,7 @@ from isaaclab.markers.config import FRAME_MARKER_CFG
 
 
 @configclass
-class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
+class AR4MPCameraEnvCfg(ar4mp_camera_env_cfg.AR4MPRGBCameraEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
@@ -47,7 +47,7 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
         self.commands.ee_pose.body_name = "gripper_base_link"
 
 @configclass
-class AAR4MPEnvCfg_Play(AR4MPEnvCfg):
+class AR4MPCameraEnvCfg_Play(AR4MPCameraEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()

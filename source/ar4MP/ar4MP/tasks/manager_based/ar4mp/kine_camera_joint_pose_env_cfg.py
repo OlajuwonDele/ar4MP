@@ -6,7 +6,7 @@
 import math
 
 from isaaclab.utils import configclass
-from . import joint_pos_env_cfg 
+from . import camera_joint_pos_env_cfg 
 from . import mdp
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
@@ -26,7 +26,7 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 
 
 @configclass
-class AR4MPEnvCfg(joint_pos_env_cfg.AR4MPEnvCfg):
+class AR4MPCameraEnvCfg(camera_joint_pos_env_cfg.AR4MPCameraEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
@@ -56,7 +56,7 @@ class AR4MPEnvCfg(joint_pos_env_cfg.AR4MPEnvCfg):
         )
 
 @configclass
-class AAR4MPEnvCfg_Play(AR4MPEnvCfg):
+class AR4MPEnvCfg_Play(AR4MPCameraEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
