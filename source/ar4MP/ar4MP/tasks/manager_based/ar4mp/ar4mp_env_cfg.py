@@ -94,7 +94,14 @@ class ObservationsCfg:
         # observation terms (order preserved)
         joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
         joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
-        pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "ee_pose"})
+        # pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "ee_pose"})
+        pose_error = ObsTerm(
+            func=mdp.ee_pose_error,
+            params={
+                "asset_cfg": SceneEntityCfg("robot", body_names=MISSING),
+                "command_name": "ee_pose",
+                },
+            )
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self):
@@ -113,7 +120,7 @@ class EventCfg:
         func=mdp.reset_joints_by_scale,
         mode="reset",
         params={
-            "position_range": (0.5, 1.5),
+            "position_range": (-1.5, 1.5),
             "velocity_range": (0.0, 0.0),
         },
     )
@@ -143,7 +150,7 @@ class RewardsCfg:
     reached_goal = RewTerm(
         func=mdp.reached_ee_goal,
         weight=1.0,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING),"threshold" : 0.07, "command_name": "ee_pose"}
+        params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING),"threshold" : 0.05, "command_name": "ee_pose"}
     )
     # action penalty
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
@@ -200,7 +207,7 @@ class AR4MPEnvCfg(ManagerBasedRLEnvCfg):
         # general settings
         self.decimation = 2
         self.sim.render_interval = self.decimation
-        self.episode_length_s = 30.0
+        self.episode_length_s = 60.0
         self.viewer.eye = (3.5, 3.5, 3.5)
         # simulation settings
         self.sim.dt = 1.0 / 60.0

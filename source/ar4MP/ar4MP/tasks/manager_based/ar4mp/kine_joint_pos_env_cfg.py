@@ -8,6 +8,7 @@ import math
 from isaaclab.utils import configclass
 from . import joint_pos_env_cfg 
 from . import mdp
+from . import ar4mp_env_cfg
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 ##
@@ -19,44 +20,59 @@ from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.markers.config import FRAME_MARKER_CFG 
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import RewardTermCfg as RewTerm
+from isaaclab.managers import CurriculumTermCfg as CurrTerm
 
-##
-# Environment configuration
-##
+asset = SceneEntityCfg("robot", body_names=["gripper_base_link"])
+
+@configclass
+class KinematicRewardsCfg(ar4mp_env_cfg.RewardsCfg):
+    """Kinematic Reward terms for the MDP."""
+
+    lci = RewTerm(func=mdp.reward_lci, weight=0.02, params={"asset_cfg": asset})
+    manip = RewTerm(func=mdp.reward_manip, weight=0.02, params={"asset_cfg": asset})
+    oim = RewTerm(func=mdp.reward_oim, weight=0.02, params={"asset_cfg": asset})
+    dyn_manip = RewTerm(func=mdp.reward_dyn_manip, weight=0.02, params={"asset_cfg": asset})
+    iso_idx = RewTerm(func=mdp.reward_iso_idx, weight=0.02, params={"asset_cfg": asset})
+    dci = RewTerm(func=mdp.reward_dci, weight=0.02, params={"asset_cfg": asset})
 
 
 @configclass
-class AR4MPEnvCfg(joint_pos_env_cfg.AR4MPEnvCfg):
+class KinematicCurriculumCfg(ar4mp_env_cfg.CurriculumCfg):
+    """Kinematic Curriculum terms for the MDP."""
+
+    lci = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "lci", "weight": 0.1, "num_steps": 4500}
+    )
+
+    manip = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "manip", "weight": 0.1, "num_steps": 4500}
+    )
+
+    oim = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "oim", "weight": 0.1, "num_steps": 4500}
+    )
+
+    dyn_manip = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "dyn_manip", "weight": 0.1, "num_steps": 4500}
+    )
+
+    iso_idx = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "iso_idx", "weight": 0.1, "num_steps": 4500}
+    )
+
+    dci = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "dci", "weight": 0.1, "num_steps": 4500}
+    )
+@configclass
+class AR4MPKineEnvCfg(joint_pos_env_cfg.AR4MPEnvCfg):
+    """Configuration for the Kinematic inspired AR4MP environment."""
+    rewards: KinematicRewardsCfg = KinematicRewardsCfg()
+    curriculum: KinematicCurriculumCfg = KinematicCurriculumCfg()
     def __post_init__(self):
-        # post init of parent
         super().__post_init__()
         
-
-        asset = SceneEntityCfg("robot", body_names=["gripper_base_link"])
-        # # override observation policy to include kinematic metrics
-        self.observations.policy.local_condition_index = ObsTerm(func=mdp.local_condition_index, params={"asset_cfg": asset})
-        self.observations.policy.manipulability = ObsTerm(func=mdp.manipulability, params={"asset_cfg": asset})
-        self.observations.policy.order_independent_manipulability = ObsTerm(func=mdp.order_independent_manipulability, params={"asset_cfg": asset})
-        self.observations.policy.dynamic_manipulability = ObsTerm(func=mdp.dynamic_manipulability, params={"asset_cfg": asset})
-        self.observations.policy.isotropy_index = ObsTerm(func=mdp.isotropy_index, params={"asset_cfg": asset})
-        self.observations.policy.dynamic_condition_index = ObsTerm(func=mdp.dynamic_condition_index, params={"asset_cfg": asset})
-        self.observations.policy.concatenate_terms = True
-
-        # # override rewards
-        self.rewards.lci = RewTerm(func=mdp.reward_lci, weight=0.0001, params={"asset_cfg": asset})
-        self.rewards.manip = RewTerm(func=mdp.reward_manip, weight=0.0001, params={"asset_cfg": asset})
-        self.rewards.oim = RewTerm(func=mdp.reward_oim, weight=0.0001, params={"asset_cfg": asset})
-        self.rewards.dyn_manip = RewTerm(func=mdp.reward_dyn_manip, weight=0.0001, params={"asset_cfg": asset})
-        self.rewards.iso_idx = RewTerm(func=mdp.reward_iso_idx, weight=0.0001, params={"asset_cfg": asset})
-        self.rewards.dci = RewTerm(func=mdp.reward_dci, weight=0.0001, params={"asset_cfg": asset})
-        self.rewards.position_tracking = RewTerm(
-            func=mdp.position_command_error_tanh, 
-            weight=20.0, # Increased weight
-            params={"std": 0.5, "command_name": "ee_pose", "asset_cfg": asset}
-        )
-
 @configclass
-class AAR4MPEnvCfg_Play(AR4MPEnvCfg):
+class AR4MPEnvCfg_Play(AR4MPKineEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()

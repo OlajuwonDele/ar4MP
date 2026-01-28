@@ -12,6 +12,7 @@ import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformer
+from isaaclab.utils.math import combine_frame_transforms, quat_error_magnitude, quat_mul
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -117,3 +118,14 @@ def dynamic_condition_index(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg) -
     # RL policies can only use the Real part
     return torch.real(eigvals).mean(dim=-1).unsqueeze(-1)
 
+def ee_pose_error(env, asset_cfg: SceneEntityCfg, command_name: str):
+    """Returns EE pose error: goal current"""
+
+    asset: RigidObject = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    # obtain the desired and current positions
+    des_pos_b = command[:, :3]
+    des_pos_w, _ = combine_frame_transforms(asset.data.root_pos_w, asset.data.root_quat_w, des_pos_b)
+    curr_pos_w = asset.data.body_pos_w[:, asset_cfg.body_ids[0]] 
+    
+    return des_pos_w - curr_pos_w

@@ -35,19 +35,26 @@ class AR4MPEnvCfg(ar4mp_env_cfg.AR4MPEnvCfg):
                 self.rewards.end_effector_position_tracking_fine_grained,
                 self.rewards.end_effector_orientation_tracking,
                 self.rewards.reached_goal,
+                self.observations.policy.pose_error,
             ]:
                 r.params["asset_cfg"].body_names = ["gripper_base_link"]
 
         # override actions
         self.actions.arm_action = mdp.JointPositionActionCfg(
-            asset_name="robot", joint_names=["joint_.*"], scale=0.5, use_default_offset=True, debug_vis=True
+            asset_name="robot", joint_names=["joint_.*"], scale=0.5, use_default_offset=True, debug_vis=True, preserve_order = True
+        )
+        self.actions.gripper_action = mdp.BinaryJointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["gripper_jaw.*_joint"],
+            open_command_expr={"gripper_jaw.*_joint": 0.014},
+            close_command_expr={"gripper_jaw.*_joint": 0.0},
         )
         # override command generator body
         # end-effector is along z-direction
         self.commands.ee_pose.body_name = "gripper_base_link"
 
 @configclass
-class AAR4MPEnvCfg_Play(AR4MPEnvCfg):
+class AR4MPEnvCfg_Play(AR4MPEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()

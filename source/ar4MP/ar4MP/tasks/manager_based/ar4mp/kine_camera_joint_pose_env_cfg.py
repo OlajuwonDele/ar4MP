@@ -34,13 +34,13 @@ class AR4MPCameraEnvCfg(camera_joint_pos_env_cfg.AR4MPCameraEnvCfg):
 
         asset = SceneEntityCfg("robot", body_names=["gripper_base_link"])
         # # override observation policy to include kinematic metrics
-        self.observations.policy.local_condition_index = ObsTerm(func=mdp.local_condition_index, params={"asset_cfg": asset})
-        self.observations.policy.manipulability = ObsTerm(func=mdp.manipulability, params={"asset_cfg": asset})
-        self.observations.policy.order_independent_manipulability = ObsTerm(func=mdp.order_independent_manipulability, params={"asset_cfg": asset})
-        self.observations.policy.dynamic_manipulability = ObsTerm(func=mdp.dynamic_manipulability, params={"asset_cfg": asset})
-        self.observations.policy.isotropy_index = ObsTerm(func=mdp.isotropy_index, params={"asset_cfg": asset})
-        self.observations.policy.dynamic_condition_index = ObsTerm(func=mdp.dynamic_condition_index, params={"asset_cfg": asset})
-        self.observations.policy.concatenate_terms = True
+        # self.observations.policy.local_condition_index = ObsTerm(func=mdp.local_condition_index, params={"asset_cfg": asset})
+        # self.observations.policy.manipulability = ObsTerm(func=mdp.manipulability, params={"asset_cfg": asset})
+        # self.observations.policy.order_independent_manipulability = ObsTerm(func=mdp.order_independent_manipulability, params={"asset_cfg": asset})
+        # self.observations.policy.dynamic_manipulability = ObsTerm(func=mdp.dynamic_manipulability, params={"asset_cfg": asset})
+        # self.observations.policy.isotropy_index = ObsTerm(func=mdp.isotropy_index, params={"asset_cfg": asset})
+        # self.observations.policy.dynamic_condition_index = ObsTerm(func=mdp.dynamic_condition_index, params={"asset_cfg": asset})
+        # self.observations.policy.concatenate_terms = True
 
         # # override rewards
         self.rewards.lci = RewTerm(func=mdp.reward_lci, weight=0.0001, params={"asset_cfg": asset})

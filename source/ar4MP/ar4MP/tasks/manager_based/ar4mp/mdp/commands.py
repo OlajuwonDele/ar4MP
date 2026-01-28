@@ -66,7 +66,6 @@ class WaypointCommand(CommandTerm):
             env_origins = self._env.scene.env_origins # Shape (N, 3)
             
             # NOTE: VisualizationMarkers can often accept Torch tensors directly on GPU 
-            # in newer Isaac Lab versions. If this errors, keep your .cpu().numpy() conversion.
             self.goal_pose_visualizer.visualize(
                 translations=goal_trans + env_origins, 
                 orientations=goal_orient
