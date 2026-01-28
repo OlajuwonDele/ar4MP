@@ -19,9 +19,7 @@ from isaaclab.app import AppLauncher
 parser = argparse.ArgumentParser(description="Inferencing a policy on an AR4 robot with Kinematic Analysis.")
 parser.add_argument("--checkpoint", type=str, help="Path to model checkpoint exported as jit.", required=True)
 
-# append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
-# parse the arguments
 args_cli = parser.parse_args()
 
 # launch omniverse app
@@ -34,19 +32,20 @@ import os
 import torch
 import omni
 import numpy as np
-import matplotlib.pyplot as plt # Added for plotting
+import matplotlib.pyplot as plt
 
 from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
-# Ensure source path is added
 root_dir = Path(__file__).resolve().parents[2] 
 source_dir = str(root_dir / "source" / "ar4MP")
 if source_dir not in sys.path:
     sys.path.append(source_dir)
 
+# Depending on which policy is being monitored switch between either
 from ar4MP.tasks.manager_based.ar4mp.kine_joint_pos_env_cfg import AR4MPEnvCfg_Play
 # from ar4MP.tasks.manager_based.ar4mp.joint_pos_env_cfg import AR4MPEnvCfg_Play
+
 def main():
     """Main function."""
     # load the trained jit policy
@@ -66,7 +65,7 @@ def main():
     # create environment
     env = ManagerBasedRLEnv(cfg=env_cfg)
 
-    print("✔ Starting IsaacLab Policy Inference  Analysis...")
+    print("Starting IsaacLab Policy Inference  Analysis...")
 
     ee_positions = []
     goal_positions = []  
@@ -93,13 +92,9 @@ def main():
     # Jacobian index is typically body_id - 1 for fixed base robots in PhysX
     ee_jacobian_index = ee_body_id - 1
 
-    # Constants for math
     I = torch.eye(n, device=env.device)
     N_ = (1/n) * I
 
-    # ---------------------------------------------------------
-    # Inference Loop
-    # ---------------------------------------------------------
     obs, _ = env.reset()
     count = 0
     max_steps = 200 # Limit to prevent infinite loop during plotting test
@@ -135,8 +130,7 @@ def main():
                 # If goals are local to env, add origin
                 goal_pos = goals[:, 0:3] + env.scene.env_origins
             except:
-                # Fallback if specific command name not found
-                goal_pos = ee_pos # Just track itself if no goal found
+                goal_pos = ee_pos
 
     
             dist = torch.norm(ee_pos - goal_pos, dim=1)
@@ -170,7 +164,7 @@ def main():
             eigen_mean = torch.einsum("bii->b", jacobian @ jacobian.transpose(1,2)) / n
             isotropy_index = order_indep_manip / (eigen_mean + 1e-6)
 
-            # Store data (for env 0)
+        
             env_idx = 0
             ee_positions.append(ee_pos[env_idx].cpu().clone())
             goal_positions.append(goal_pos[env_idx].cpu().clone()) 
@@ -186,9 +180,7 @@ def main():
             if count >= max_steps:
                 break
 
-    # ---------------------------------------------------------
-    # 5. Plotting
-    # ---------------------------------------------------------
+
     print("Plotting results...")
 
     pos_errors = torch.stack(pos_errors)
@@ -198,7 +190,6 @@ def main():
     isotropy_indices = torch.stack(isotropy_indices)      
     dyn_manips = torch.stack(dyn_manips)                 
     
-    # Calculate Mean Positional Accuracy
     mean_accuracy = torch.mean(pos_errors).item()
     std_accuracy = torch.std(pos_errors).item()
     
@@ -282,7 +273,6 @@ def main():
 
     ax6 = fig.add_subplot(236)
     steps = np.arange(len(pos_errors))
-    # Convert to cm for easier reading if preferred, here kept as meters
     ax6.plot(steps, pos_errors.numpy(), color='red')
     ax6.set_title("Positional Accuracy (Tracking Error)")
     ax6.set_xlabel("Step")

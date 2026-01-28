@@ -34,7 +34,7 @@ class AR4Policy(PolicyController):
         # usd_path = "/home/juwon/IsaacLab/source/isaaclab_assets/isaaclab_assets/robots/ar_mk3/ar_mk3.usd"
         super().__init__(name, prim_path, root_path, usd_path, position, orientation)
         
-        policy_dir = root_dir / "scripts" / "sim2real" / "controllers" / "config" / "test"
+        policy_dir = root_dir / "scripts" / "sim2real" / "controllers" / "config" / "rl_motion_plan"
 
         self.load_policy(
             str(policy_dir / "policy.pt"),
@@ -42,7 +42,7 @@ class AR4Policy(PolicyController):
         )
 
         self._action_scale = 0.5
-        self._previous_action = np.zeros(6)
+        self._previous_action = np.zeros(7)
         self._policy_counter = 0
         self._decimation = 2
 
@@ -82,7 +82,7 @@ class AR4Policy(PolicyController):
         
     
     def _compute_observation(self, ee_pose_command: np.ndarray):
-        obs = np.zeros(25)
+        obs = np.zeros(26)
 
         if not self.has_joint_data:
             return None
@@ -99,7 +99,7 @@ class AR4Policy(PolicyController):
         print(f"error ={ee_pose_command[0:3] - gripper_base_link_pos}")
 
         # 4. last_action (6 arm joints)
-        obs[19:25] = self._previous_action
+        obs[19:26] = self._previous_action
 
         return obs
     
@@ -115,9 +115,10 @@ class AR4Policy(PolicyController):
 
         # self.action = np.zeros(6)
         joint_positions = np.concatenate([
-            self.default_pos[:6] + self.action * self._action_scale,
+            self.default_pos[:6] + self.action[:6] * self._action_scale,
             self.default_pos[6:]  # add gripper joints
         ])
+        
      
         action_msg = ArticulationAction(joint_positions=joint_positions)
         self.robot.apply_action(action_msg)
