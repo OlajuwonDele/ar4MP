@@ -116,7 +116,7 @@ class AR4Policy(PolicyController):
         # self.action = np.zeros(6)
         joint_positions = np.concatenate([
             self.default_pos[:6] + self.action[:6] * self._action_scale,
-            self.default_pos[6:]  # add gripper joints
+            self.default_pos[6:] + self.action[6:] * self._action_scale,
         ])
         
      

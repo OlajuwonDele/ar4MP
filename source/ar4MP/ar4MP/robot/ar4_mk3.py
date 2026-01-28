@@ -18,7 +18,7 @@ import os
 # -----------------------------
 AR4_MK3_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=os.path.join(os.path.dirname(__file__), "ar_mk3/ar_mk32.usd"),
+        usd_path=os.path.join(os.path.dirname(__file__), "ar_mk3/ar_mk3.usd"),
         activate_contact_sensors=False,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
